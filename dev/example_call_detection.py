@@ -1,6 +1,4 @@
 import ast, astor
-from typing import Tuple
-from pickle import TUPLE
 from modules.ExampleCallDetection import ExampleCallDetection
 
 example_code = """
@@ -21,6 +19,9 @@ df = 1
 df = load_csv("data.csv")
 foo(df)
 """
+# actual test file
+with open("../test/test.py", "r") as f:
+    example_code = f.read()
 
 # tree = ast.parse(example_code).body
 #
@@ -33,4 +34,4 @@ foo(df)
 #     print(key, value)
 
 e_d = ExampleCallDetection()
-print(e_d.extract_code_blocks(example_code, "foo"))
+print()

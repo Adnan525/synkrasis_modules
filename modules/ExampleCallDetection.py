@@ -1,6 +1,6 @@
 import ast
 import astor
-
+from deprecated import deprecated
 from utils.output_message_format.output_colour import print_error, print_warning, print_success
 
 
@@ -21,7 +21,7 @@ class ExampleCallDetection():
     @staticmethod
     def _get_function_names_from_import(content_tree: list) -> list[str]:
         """
-        Extracts all the defined function names from the import statement.
+        Extracts all the IMPORTED function names from the import statement.
         Args:
             content_tree (list): List of ast nodes.
 
@@ -38,7 +38,7 @@ class ExampleCallDetection():
 
     def get_function_names(self, content_tree: list) -> list[str]:
         """
-        Extracts all the defined function names from the code content.
+        Extracts all the DEFINED function names from the code content.
         Args:
             content_tree (list): List of ast nodes.
 
@@ -68,16 +68,11 @@ class ExampleCallDetection():
         content_tree = ast.parse(code)
         content_body = content_tree.body
 
-        if self.does_contain_example_call(code, target_function_name):
-            print_warning("Example call detected.")
-            print_success("Removed function call.")
-            target = [item for item in content_body if isinstance(item, self.to_keep)]
-            return "\n".join([astor.to_source(item) for item in target])
-
-        else:
-            return code
+        target = [item for item in content_body if isinstance(item, self.to_keep)]
+        return "\n".join([astor.to_source(item) for item in target])
 
 
+    @deprecated(version='0.0.1', reason="This function is under development, use with caution.")
     def does_contain_example_call(self, code: str, target_function_name: str) -> bool:
         """
         Check if the code contains example calls.
@@ -103,7 +98,10 @@ class ExampleCallDetection():
             # Function call
             if isinstance(item, (ast.Expr, ast.Assign)):
                 if isinstance(item.value, ast.Call):
-                    if item.value.func.id == target_function_name:
-                        return True
+                    try:
+                        if item.value.func.id == target_function_name:
+                            return True
+                    except AttributeError:
+                        pass
 
         return False
