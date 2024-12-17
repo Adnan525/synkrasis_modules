@@ -1,4 +1,3 @@
-import ast, astor
 from modules.ExampleCallDetection import ExampleCallDetection
 
 example_code = """
@@ -23,15 +22,5 @@ foo(df)
 with open("../test/test.py", "r") as f:
     example_code = f.read()
 
-# tree = ast.parse(example_code).body
-#
-# for item in tree:
-#     print(item)
-#
-# print(tree[0].names[0].name)
-#
-# for key, value in tree[0].__dict__.items():
-#     print(key, value)
-
 e_d = ExampleCallDetection()
-print()
+print(e_d.extract_code_blocks(example_code))

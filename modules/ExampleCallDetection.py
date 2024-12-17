@@ -1,3 +1,17 @@
+# =====================================================================================================
+# Module for detecting example calls in the code.
+# Usage:
+#     - extract_code_blocks: Extracts specific code blocks from the code content.
+#       Will remove anything that is not an instance of user defined tuple comprised
+#       of types from ast, e.g. ast.Import, ast.ImportFrom, ast.FunctionDef.
+#
+#     - get_function_names: Extracts all defined and imported function names from the code
+#       content.
+#
+#     - does_contain_example_call: [Deprecated] Check if the code contains example calls.
+#       Under development, use with caution.
+# =====================================================================================================
+
 import ast
 import astor
 from deprecated import deprecated
@@ -17,24 +31,27 @@ class ExampleCallDetection():
         """
         self.to_keep = to_keep
 
-
-    @staticmethod
-    def _get_function_names_from_import(content_tree: list) -> list[str]:
+    def extract_code_blocks(self, code: str) -> str:
         """
-        Extracts all the IMPORTED function names from the import statement.
+        Extract specific code blocks according to self.to_keep from the code content.
+
         Args:
-            content_tree (list): List of ast nodes.
+            code (str): The code to extract code blocks from.
+            target_function_name (str): The name of the target function.
 
         Returns:
-            Function_names (list[str]): List of function names.
+            extracted_code (str): The code blocks extracted.
         """
-        function_names = []
-        for item in content_tree:
-            if isinstance(item, ast.ImportFrom):
-                for alias_object in item.names: # list[alias_object]
-                    function_names.append(alias_object.name)
-        return function_names
+        try:
+            content_tree = ast.parse(code)
+            content_body = content_tree.body
 
+        except Exception as e:
+            print_error(f"Error parsing generated code. Returning original code. Error: {str(e)}")
+            return code
+
+        target = [item for item in content_body if isinstance(item, self.to_keep)]
+        return "\n".join([astor.to_source(item) for item in target])
 
     def get_function_names(self, content_tree: list) -> list[str]:
         """
@@ -52,25 +69,6 @@ class ExampleCallDetection():
 
         import_function_names = self._get_function_names_from_import(content_tree)
         return [item for sub_list in [function_names, import_function_names] for item in sub_list]
-
-
-    def extract_code_blocks(self, code: str, target_function_name: str) -> str:
-        """
-        Extract specific code blocks according to self.to_keep from the code content.
-
-        Args:
-            code (str): The code to extract code blocks from.
-            target_function_name (str): The name of the target function.
-
-        Returns:
-            extracted_code (str): The code blocks extracted.
-        """
-        content_tree = ast.parse(code)
-        content_body = content_tree.body
-
-        target = [item for item in content_body if isinstance(item, self.to_keep)]
-        return "\n".join([astor.to_source(item) for item in target])
-
 
     @deprecated(version='0.0.1', reason="This function is under development, use with caution.")
     def does_contain_example_call(self, code: str, target_function_name: str) -> bool:
@@ -105,3 +103,20 @@ class ExampleCallDetection():
                         pass
 
         return False
+
+    def _get_function_names_from_import(self, content_tree: list) -> list[str]:
+        """
+        Extracts all the IMPORTED function names from the import statement.
+        Args:
+            content_tree (list): List of ast nodes.
+
+        Returns:
+            Function_names (list[str]): List of function names.
+        """
+        to_keep = self.to_keep  # Just to get rid of warning on pycharm
+        function_names = []
+        for item in content_tree:
+            if isinstance(item, ast.ImportFrom):
+                for alias_object in item.names:  # list[alias_object]
+                    function_names.append(alias_object.name)
+        return function_names
